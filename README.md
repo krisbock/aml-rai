@@ -2,7 +2,7 @@
 
 This repository demonstrates an example for how to train and evaluate models using the Azure ML CLI and Responsible AI dashboard.
 
-The recommended flow demo flow is as follows:
+The recommended demo flow is as follows:
 
 1. Build a local conda environment using the `env.yml` file.
 2. Test the training script in `src/train.py` locally to ensure that it works end-to-end.
