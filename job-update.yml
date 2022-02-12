@@ -1,13 +1,14 @@
-experiment_name: john-rai
 type: pipeline
+experiment_name: john-rai
+compute: azureml:rai-cluster
 
 inputs:
   target_column_name: income
   my_training_data:
-    dataset: azureml:Adult_Train_PQ:9
+    dataset: azureml:Adult_Train_Update:3
     mode: ro_mount
   my_test_data:
-    dataset: azureml:Adult_Test_PQ:9
+    dataset: azureml:Adult_Test_Update:3
     mode: ro_mount
 
 outputs:
@@ -17,8 +18,6 @@ outputs:
     mode: upload
   model_info:
     mode: upload
-
-compute: azureml:rai-cluster
 
 settings:
   component_job:
@@ -30,7 +29,7 @@ jobs:
   train-model:
     code:
       local_path: src
-    command: python train-original.py --train_data ${{inputs.training_data}} --target_column ${{inputs.target_column_name}} --model_output ${{outputs.model_output}} 
+    command: python train.py --train_data ${{inputs.training_data}} --target_column ${{inputs.target_column_name}} --model_output ${{outputs.model_output}} 
     environment: azureml:AML-RAI-Environment:9
     inputs:
       training_data: ${{inputs.my_training_data}}
@@ -57,7 +56,7 @@ jobs:
       train_dataset: ${{inputs.my_training_data}}
       test_dataset: ${{inputs.my_test_data}}
       target_column_name: ${{inputs.target_column_name}}
-      categorical_column_names: '["Race", "Sex", "Workclass", "Marital Status", "Country", "Occupation"]'
+      categorical_column_names: '["Workclass", "Country", "Occupation"]'
     outputs:
       rai_insights_dashboard: ${{outputs.rai_insights_dashboard}}
 
@@ -73,8 +72,7 @@ jobs:
     component: azureml:RAIInsightsCausal:9
     inputs:
       rai_insights_dashboard: ${{jobs.create-rai-job.outputs.rai_insights_dashboard}}
-      treatment_features: '["Age", "Sex"]'
-      heterogeneity_features: '["Marital Status"]'
+      treatment_features: '["Age"]'
 
   counterfactual_01:
     type: component_job
@@ -89,7 +87,7 @@ jobs:
     component: azureml:RAIInsightsErrorAnalysis:9
     inputs:
       rai_insights_dashboard: ${{jobs.create-rai-job.outputs.rai_insights_dashboard}}
-      filter_features: '["Race", "Sex", "Workclass", "Marital Status", "Country", "Occupation"]'
+      filter_features: '["Workclass", "Country", "Occupation"]'
 
   gather_01:
     type: component_job

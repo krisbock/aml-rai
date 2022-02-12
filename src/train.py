@@ -5,15 +5,10 @@ import tempfile
 import mlflow
 import mlflow.sklearn
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-from lightgbm import LGBMClassifier
-
-def split_label(dataset, target_feature):
-    X = dataset.drop([target_feature], axis=1)
-    y = dataset[[target_feature]]
-    return X, y
-
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+    
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_data', type=str, help='Path to training data')
@@ -23,21 +18,26 @@ def parse_args():
     return args
 
 def main(args):
+
+    print('Loading data ...')
     data = pd.read_parquet(args.train_data)
+    target_column = args.target_column
     train_data, test_data = train_test_split(data, test_size=0.2, random_state=42, shuffle=True)
+    y_train = train_data[target_column]
+    X_train = train_data.drop(labels=target_column, axis='columns')
+    y_test = test_data[target_column]
+    x_test = test_data.drop(labels=target_column, axis='columns')
 
-    target = args.target_column
-    X_train, y_train = split_label(train_data, target)
-    X_test, y_test = split_label(test_data, target)
+    print('Training model ...')
+    model = LogisticRegression(solver='liblinear')
+    model.fit(X_train, y_train)
 
-    clf = LGBMClassifier(n_estimators=5)
-    model = clf.fit(X_train, y_train)
-
-    pred = model.predict(X_test)
+    pred = model.predict(x_test)
     acc = accuracy_score(y_test, pred)
     mlflow.log_metric('Final accuracy', float(acc))
     print('Test accuracy: {}'.format(acc))
 
+    print('Saving output ...')
     with tempfile.TemporaryDirectory() as td:
         tmp_output_dir = os.path.join(td, 'my_model_dir')
         mlflow.sklearn.save_model(sk_model=model, path=tmp_output_dir)

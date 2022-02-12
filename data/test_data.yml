@@ -1,0 +1,4 @@
+$schema: https://azuremlschemas.azureedge.net/latest/dataset.schema.json
+name: Adult_Test_Update
+description: Updated version of adult test dataset where non-relevant columns are removed.
+local_path: adult_test.parquet

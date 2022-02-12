@@ -1,5 +1,6 @@
-experiment_name: john-rai
 type: pipeline
+experiment_name: john-rai
+compute: azureml:rai-cluster
 
 inputs:
   target_column_name: income
@@ -17,8 +18,6 @@ outputs:
     mode: upload
   model_info:
     mode: upload
-
-compute: azureml:rai-cluster
 
 settings:
   component_job:
