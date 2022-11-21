@@ -18,6 +18,8 @@ python src/train.py --train_data data/original/adult_train.parquet --target_colu
 ```
 az ml data create --name Adult_Train_PQ --version 1 --path ./data/original/adult_train.parquet --resource-group my-resource-group --workspace-name my-workspace
 az ml data create --name Adult_Test_PQ --version 1 --path ./data/original/adult_test.parquet --resource-group my-resource-group --workspace-name my-workspace
+az ml data create --name Adult_Train_MLT --version 1 --path ./data/original/train --type mltable 
+az ml data create --name Adult_Test_MLT --version 1 --path ./data/original/test --type mltable 
 ```
 4. Submit a remote pipeline job with the Azure ML CLI 2.0 using the specification in the `job.yml` file.
 ```

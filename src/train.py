@@ -8,6 +8,7 @@ import pandas as pd
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
+import mltable
     
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -20,7 +21,8 @@ def parse_args():
 def main(args):
 
     print('Loading data ...')
-    data = pd.read_parquet(args.train_data)
+    #data = pd.read_parquet(args.train_data)
+    data = mltable.load(args.train_data).to_pandas_dataframe()
     target_column = args.target_column
     train_data, test_data = train_test_split(data, test_size=0.2, random_state=42, shuffle=True)
     y_train = train_data[target_column]
