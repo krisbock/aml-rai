@@ -5,10 +5,10 @@ compute: azureml:rai-cluster
 inputs:
   target_column_name: income
   my_training_data:
-    dataset: azureml:Adult_Train_PQ:9
+    dataset: azureml:Adult_Train_PQ:1
     mode: ro_mount
   my_test_data:
-    dataset: azureml:Adult_Test_PQ:9
+    dataset: azureml:Adult_Test_PQ:1
     mode: ro_mount
 
 outputs:
@@ -22,7 +22,7 @@ outputs:
 settings:
   component_job:
     datastore: azureml:workspaceblobstore
-    environment: azureml:AML-RAI-Environment:9
+    environment: azureml:AML-RAI-Environment:2
 
 jobs:
 
@@ -30,7 +30,7 @@ jobs:
     code:
       local_path: src
     command: python train.py --train_data ${{inputs.training_data}} --target_column ${{inputs.target_column_name}} --model_output ${{outputs.model_output}} 
-    environment: azureml:AML-RAI-Environment:9
+    environment: azureml:AML-RAI-Environment:2
     inputs:
       training_data: ${{inputs.my_training_data}}
       target_column_name: ${{inputs.target_column_name}}
@@ -39,7 +39,7 @@ jobs:
 
   register-model-job:
     type: component_job
-    component: azureml:RegisterModel:9
+    component: azureml:register_model:2
     inputs:
       model_input_path: ${{jobs.train-model.outputs.model_output}}
       model_base_name: component_registered_lr_01
@@ -48,7 +48,7 @@ jobs:
 
   create-rai-job:
     type: component_job
-    component: azureml:RAIInsightsConstructor:9
+    component: azureml:rai_insights_constructor:2
     inputs:
       title: With just the OSS
       task_type: classification
@@ -62,14 +62,14 @@ jobs:
 
   explain_01:
     type: component_job
-    component: azureml:RAIInsightsExplanation:9
+    component: azureml:rai_insights_explanation:2
     inputs:
       comment: Some random string
       rai_insights_dashboard: ${{jobs.create-rai-job.outputs.rai_insights_dashboard}}
 
   causal_01:
     type: component_job
-    component: azureml:RAIInsightsCausal:9
+    component: azureml:rai_insights_causal:2
     inputs:
       rai_insights_dashboard: ${{jobs.create-rai-job.outputs.rai_insights_dashboard}}
       treatment_features: '["Age", "Sex"]'
@@ -77,7 +77,7 @@ jobs:
 
   counterfactual_01:
     type: component_job
-    component: azureml:RAIInsightsCounterfactual:9
+    component: azureml:rai_insights_counterfactual:2
     inputs:
       rai_insights_dashboard: ${{jobs.create-rai-job.outputs.rai_insights_dashboard}}
       total_CFs: 10
@@ -85,14 +85,14 @@ jobs:
 
   error_analysis_01:
     type: component_job
-    component: azureml:RAIInsightsErrorAnalysis:9
+    component: azureml:rai_insights_erroranalysis:2
     inputs:
       rai_insights_dashboard: ${{jobs.create-rai-job.outputs.rai_insights_dashboard}}
       filter_features: '["Race", "Sex", "Workclass", "Marital Status", "Country", "Occupation"]'
 
   gather_01:
     type: component_job
-    component: azureml:RAIInsightsGather:9
+    component: azureml:rai_insights_gather:2
     inputs:
       constructor: ${{jobs.create-rai-job.outputs.rai_insights_dashboard}}
       insight_1: ${{jobs.causal_01.outputs.causal}}
