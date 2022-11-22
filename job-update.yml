@@ -1,15 +1,17 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+experiment_name: rai_adult_census
 type: pipeline
-experiment_name: john-rai
-compute: azureml:rai-cluster
 
 inputs:
   target_column_name: income
   my_training_data:
-    dataset: azureml:Adult_Train_Update:3
-    mode: ro_mount
+    type: uri_file
+    path: azureml:Adult_Train_MLT:3
+    mode: download
   my_test_data:
-    dataset: azureml:Adult_Test_Update:3
-    mode: ro_mount
+    type: uri_file
+    path: azureml:Adult_Test_MLT:3
+    mode: download
 
 outputs:
   my_model_directory:
@@ -20,81 +22,78 @@ outputs:
     mode: upload
 
 settings:
-  component_job:
-    datastore: azureml:workspaceblobstore
-    environment: azureml:AML-RAI-Environment:9
+  default_compute: azureml:gpu-cluster
+  datastore: azureml:workspaceblobstore
 
 jobs:
-
-  train-model:
-    code:
-      local_path: src
+  train_model:
+    code: src
     command: python train.py --train_data ${{inputs.training_data}} --target_column ${{inputs.target_column_name}} --model_output ${{outputs.model_output}} 
-    environment: azureml:AML-RAI-Environment:9
+    environment: azureml:AML-RAI-Environment:2
     inputs:
-      training_data: ${{inputs.my_training_data}}
-      target_column_name: ${{inputs.target_column_name}}
+      training_data: ${{parent.inputs.my_training_data}}
+      target_column_name: ${{parent.inputs.target_column_name}}
     outputs:
-      model_output: ${{outputs.my_model_directory}}
+      model_output: ${{parent.outputs.my_model_directory}}
 
-  register-model-job:
-    type: component_job
-    component: azureml:RegisterModel:9
+  register_model_job:
+    type: command
+    component: azureml:register_model:2
     inputs:
-      model_input_path: ${{jobs.train-model.outputs.model_output}}
+      model_input_path: ${{parent.jobs.train_model.outputs.model_output}}
       model_base_name: component_registered_lr_01
     outputs:
-      model_info_output_path: ${{outputs.model_info}}
+      model_info_output_path: ${{parent.outputs.model_info}}
 
-  create-rai-job:
-    type: component_job
-    component: azureml:RAIInsightsConstructor:9
+  create_rai_job:
+    type: command
+    component: azureml:rai_insights_constructor:2
     inputs:
       title: With just the OSS
       task_type: classification
-      model_info_path: ${{jobs.register-model-job.outputs.model_info_output_path}}
-      train_dataset: ${{inputs.my_training_data}}
-      test_dataset: ${{inputs.my_test_data}}
-      target_column_name: ${{inputs.target_column_name}}
+      model_info_path: ${{parent.jobs.register_model_job.outputs.model_info_output_path}}
+      train_dataset: ${{parent.inputs.my_training_data}}
+      test_dataset: ${{parent.inputs.my_test_data}}
+      target_column_name: ${{parent.inputs.target_column_name}}
       categorical_column_names: '["Workclass", "Country", "Occupation"]'
     outputs:
-      rai_insights_dashboard: ${{outputs.rai_insights_dashboard}}
+      rai_insights_dashboard: ${{parent.outputs.rai_insights_dashboard}}
 
   explain_01:
-    type: component_job
-    component: azureml:RAIInsightsExplanation:9
+    type: command
+    component: azureml:rai_insights_explanation:2
     inputs:
       comment: Some random string
-      rai_insights_dashboard: ${{jobs.create-rai-job.outputs.rai_insights_dashboard}}
+      rai_insights_dashboard: ${{parent.jobs.create_rai_job.outputs.rai_insights_dashboard}}
 
   causal_01:
-    type: component_job
-    component: azureml:RAIInsightsCausal:9
+    type: command
+    component: azureml:rai_insights_causal:2
     inputs:
-      rai_insights_dashboard: ${{jobs.create-rai-job.outputs.rai_insights_dashboard}}
+      rai_insights_dashboard: ${{parent.jobs.create_rai_job.outputs.rai_insights_dashboard}}
       treatment_features: '["Age"]'
 
   counterfactual_01:
-    type: component_job
-    component: azureml:RAIInsightsCounterfactual:9
+    type: command
+    component: azureml:rai_insights_counterfactual:2
     inputs:
-      rai_insights_dashboard: ${{jobs.create-rai-job.outputs.rai_insights_dashboard}}
+      rai_insights_dashboard: ${{parent.jobs.create_rai_job.outputs.rai_insights_dashboard}}
       total_CFs: 10
       desired_class: opposite
 
   error_analysis_01:
-    type: component_job
-    component: azureml:RAIInsightsErrorAnalysis:9
+    type: command
+    component: azureml:rai_insights_erroranalysis:2
     inputs:
-      rai_insights_dashboard: ${{jobs.create-rai-job.outputs.rai_insights_dashboard}}
+      rai_insights_dashboard: ${{parent.jobs.create_rai_job.outputs.rai_insights_dashboard}}
       filter_features: '["Workclass", "Country", "Occupation"]'
 
   gather_01:
-    type: component_job
-    component: azureml:RAIInsightsGather:9
+    type: command
+    component: azureml:rai_insights_gather:2
     inputs:
-      constructor: ${{jobs.create-rai-job.outputs.rai_insights_dashboard}}
-      insight_1: ${{jobs.causal_01.outputs.causal}}
-      insight_2: ${{jobs.counterfactual_01.outputs.counterfactual}}
-      insight_3: ${{jobs.error_analysis_01.outputs.error_analysis}}
-      insight_4: ${{jobs.explain_01.outputs.explanation}}
+      constructor: ${{parent.jobs.create_rai_job.outputs.rai_insights_dashboard}}
+      insight_1: ${{parent.jobs.causal_01.outputs.causal}}
+      insight_2: ${{parent.jobs.counterfactual_01.outputs.counterfactual}}
+      insight_3: ${{parent.jobs.error_analysis_01.outputs.error_analysis}}
+      insight_4: ${{parent.jobs.explain_01.outputs.explanation}}
