@@ -1,0 +1,26 @@
+{
+  "Model": 
+    {
+      "ModelName": "Adult Census",
+      "ModelType": "Classification",
+      "ModelSummary": "This is a hypothetical classification model to analyse how whether a loan is approved"
+    },
+  "Metrics":
+    {
+      "accuracy_score": {"threshold": ">=0.85"}
+    },
+  "FeatureImportance":
+    {
+      "top_n": 6
+    },
+  "DataExplorer": 
+    {
+      "features": ["Education-Num", "Occupation"]
+    },
+  "Fairness":
+    {
+      "metric": ["accuracy_score", "selection_rate"],
+      "sensitive_features": ["Race", "Sex", "Marital Status"],
+      "fairness_evaluation_kind": "ratio"
+    }
+}

@@ -98,3 +98,13 @@ jobs:
       insight_2: ${{parent.jobs.counterfactual_01.outputs.counterfactual}}
       insight_3: ${{parent.jobs.error_analysis_01.outputs.error_analysis}}
       insight_4: ${{parent.jobs.explain_01.outputs.explanation}}
+
+  scorecard_01:
+    type: command
+    component: azureml://registries/azureml/components/microsoft_azureml_rai_tabular_score_card/versions/0.2.0
+    inputs:
+      dashboard: ${{parent.jobs.gather_01.outputs.dashboard}}
+      pdf_generation_config:
+        type: uri_file
+        path: ./adult_analyse_scorecard_config/pdf_gen.json
+        mode: download
